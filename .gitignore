@@ -1,3 +1,4 @@
 .byebug_hist
 .env
 coverage
+*.gem
