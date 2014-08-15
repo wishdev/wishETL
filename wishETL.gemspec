@@ -1,6 +1,4 @@
 lib = File.expand_path('../lib', __FILE__)
-require 'ap'
-ap lib
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'wishETL/version'
 
