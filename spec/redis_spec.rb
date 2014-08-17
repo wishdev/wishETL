@@ -22,7 +22,7 @@ describe WishETL::Step do
   context "RedisInputQueue" do
     Given (:step) { SimpleRedisQueueStep.new }
     When {
-      step.attach_to 'rspec'
+      step.attach_from 'rspec'
       step.etl
     }
     Then { step.datum.transformed == "hello kids" }

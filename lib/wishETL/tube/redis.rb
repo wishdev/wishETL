@@ -10,7 +10,7 @@ module WishETL
         super
       end
 
-      def attach_to(queue)
+      def attach_from(queue)
         @enumerator = Enumerator.new do |enum|
           while true
             val = @redis.blpop queue, 0
