@@ -9,3 +9,21 @@ require 'rspec/given'
 require 'rspec/its'
 
 require 'wishETL'
+
+module WishETL
+  module Tube
+    module Base
+      alias :load_orig :load
+
+      def load
+        load_orig if @output || @opts[:force_load]
+      end
+    end
+  end
+end
+
+RSpec.configure do |config|
+  config.before(:each) {
+    WishETL::Runner.instance.flush
+  }
+end

@@ -5,7 +5,7 @@ module WishETL
     module RedisQueueIn
       include Base
 
-      def initialize(*args)
+      def initialize(opts = {})
         @redis = Redis.new
         super
       end

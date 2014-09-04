@@ -20,8 +20,7 @@ describe WishETL::Step do
   end
 
   class MultiRowEndPoint
-    include WishETL::Tube::PipeIn
-    include WishETL::Tube::NullOut
+    include WishETL::Tube::Pipe
     include WishETL::Step::MultiRowEnd
 
     def transform
@@ -34,21 +33,16 @@ describe WishETL::Step do
   end
 
   context "MultiRow split/join" do
+    Given (:runner) { WishETL::Runner.instance }
     Given (:step1) { MultiRowStartPoint.new }
-    Given (:step2) { SimplePipeTransform.new }
-    Given (:step3) { MultiRowEndPoint.new }
+    Given (:step2) { SimplePipeTransform.new(:parent => step1) }
+    Given! (:step3) { MultiRowEndPoint.new(:parent => step2) }
 
     When {
       rd, wr = ::IO.pipe
       wr.puts MultiJson.dump({ 'input' => {'racedata' => [ 'abc', 'def' ] } })
       step1.attach_from rd
-      step1.attach_to step2
-      step2.attach_to step3
-      step1.etl
-      step2.etl
-      step2.etl
-      step3.etl
-      step3.etl
+      runner.run(false)
     }
 
     Then { step3.datum.transformed == {'racedata' => [ 'cba', 'fed' ] } }

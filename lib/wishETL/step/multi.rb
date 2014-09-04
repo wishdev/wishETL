@@ -40,50 +40,54 @@ module WishETL
 
     module MultiRowEnd
       include Base
-      def initialize(*args)
+      def initialize(opts = {})
         super
         @arrays = Hash.new { |h,k| h[k] = Array.new }
       end
 
       def etl
-        extract
-        uuid = @datum.meta["uuid"]
-        @arrays[uuid][@datum.meta["position"]] = @datum.dup
-        if @arrays[uuid].length == @datum.meta["length"]
-          @current = @arrays[uuid]
-          transform
-          load
+        if extract
+          uuid = @datum.meta["uuid"]
+          @arrays[uuid][@datum.meta["position"]] = @datum.dup
+          if @arrays[uuid].length == @datum.meta["length"]
+            @current = @arrays[uuid]
+            transform
+            load
+          end
+          true
         end
       end
     end
 
     module MultiChoice
       include Base
-      def initialize(*args)
+      def initialize(opts = {})
         super
-        @outputs = []
+        @choices = []
       end
 
-      def attach_to(*next_steps)
-        next_steps = next_steps.flatten(1)
-        next_steps.each { |next_step|
-          rd, wr = ::IO.pipe
-          if next_step.is_a? MultiInput
-            @receiver = wr
-            next_step.attach_from rd, true
-          else
-            @outputs << Choice.new(next_step, wr, @outputs.length)
-            next_step.attach_from rd
-          end
-        }
+      def attach_to(next_step)
+        rd, wr = ::IO.pipe
+        if next_step.is_a? MultiInput
+          @receiver = wr
+          @end_point = next_step
+          next_step.attach_from rd, true
+          @choices.each { |choice|
+            choice.step.attach_to next_step
+          }
+        else
+          @choices << Choice.new(next_step, wr, @choices.length)
+          next_step.attach_from rd
+          next_step.attach_to @end_point if @end_point
+        end
       end
 
       def load
-        slot = @outputs.find { |item|
-          item.step.accept? @datum.transformed
+        choice = @choices.find { |choice|
+          choice.step.accept? @datum.transformed
         }
         @receiver.puts slot.index + 1
-        @output = slot.writer
+        @output = choice.writer
         super
       end
 
@@ -100,10 +104,11 @@ module WishETL
 
     module MultiInput
       include Base
-      def initialize(*args)
-        super
+
+      def initialize(opts = {})
         @inputs = [nil]
         @slot = 0
+        super
       end
 
       def attach_from(new_input, chooser = false)
@@ -132,6 +137,30 @@ module WishETL
         else
           @slot = data.strip.to_i
         end
+      end
+    end
+
+    module Broadcaster
+      include Base
+      def initialize(opts = {})
+        super
+        @outputs = []
+      end
+
+      def attach_to(next_steps)
+        next_steps = next_steps.flatten(1)
+        next_steps.each { |next_step|
+          rd, wr = ::IO.pipe
+          @outputs << wr
+          next_step.attach_from rd
+        }
+      end
+
+      def load
+        @outputs.each { |output|
+          @output = output
+          super
+        }
       end
     end
   end

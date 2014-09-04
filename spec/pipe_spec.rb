@@ -1,6 +1,9 @@
 require_relative 'helper'
 
-describe WishETL::Step do
+describe WishETL::Tube::Pipe do
+
+  runner = WishETL::Runner.instance
+
   class StringPipeStep
     include WishETL::Tube::StringIn
     include WishETL::Tube::PipeOut
@@ -17,31 +20,28 @@ describe WishETL::Step do
     When { step.attach_from 'Hello' }
 
     context "Default operations" do
-      context "Extract" do
-        When { step.extract }
-        Then { step.datum.input == "Hello" }
-
-        context "Transform" do
-          When { step.transform }
-          Then { step.datum.transformed == "Hello" }
-        end
+      context "etl" do
+        When { step.etl }
+        Then {
+          step.datum.input == "Hello"
+          step.datum.transformed == "Hello"
+        }
       end
     end
+  end
 
-    context "Connect a pair together" do
-      Given (:step1) { StringPipeStep.new }
-      Given (:step2) { PipeStep.new }
+  context "Connect a pair together" do
+    Given! (:step1) { StringPipeStep.new }
+    Given! (:step2) { PipeStep.new(:parent => step1) }
 
-      When {
-        step1.attach_from 'Bye'
-        step1.attach_to step2
-        step1.etl
-        step2.extract
-      }
+    When {
+      step1.attach_from 'Bye'
+      step1.etl
+      step2.etl
+    }
 
-      context "Load/Extract" do
-        Then { step2.datum.input == step1.datum.transformed }
-      end
+    context "Load/Extract" do
+      Then { step2.datum.input == step1.datum.transformed }
     end
   end
 end

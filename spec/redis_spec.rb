@@ -17,17 +17,27 @@ describe WishETL::Step do
     include WishETL::Tube::RedisQueueIn
     include WishETL::Tube::NullOut
     include WishETL::Step::Base
+
+    attr_reader :transformed_data
+
+    def initialize(*args)
+      super
+      @transformed_data = []
+    end
+
+    def transform
+      super
+      @transformed_data << @datum.transformed
+    end
   end
 
   context "RedisInputQueue" do
+    Given (:runner) { WishETL::Runner.instance }
     Given (:step) { SimpleRedisQueueStep.new }
     When {
       step.attach_from 'rspec'
-      step.etl
+      runner.run(false)
     }
-    Then { step.datum.transformed == "hello kids" }
-
-    When { step.etl }
-    Then { step.datum.transformed.nil? }
+    Then { step.transformed_data == ["hello kids"] * 2 }
   end
 end

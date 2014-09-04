@@ -1,11 +1,14 @@
 module WishETL
   module Step
     module Base
+      include WishETL::Base
+
       attr_accessor :datum, :output
       attr_reader :input
 
-      def initialize(*args)
+      def initialize(opts = {})
         @datum = WishETL::Datum.new
+        @opts = opts
         super
       end
 
@@ -31,7 +34,7 @@ module WishETL
       def run
         while etl
         end
-        @output.close if @output.respond_to?(:close)
+        @output.close if @output.respond_to?(:close) && !@output.closed?
       end
 # :nocov:
 

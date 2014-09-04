@@ -2,8 +2,7 @@ require_relative 'helper'
 
 describe WishETL::Step do
   class ChooserStep
-    include WishETL::Tube::StringIn
-    include WishETL::Tube::PipeOut
+    include WishETL::Tube::Pipe
     include WishETL::Step::MultiChoice
   end
 
@@ -34,6 +33,10 @@ describe WishETL::Step do
     include WishETL::Tube::NullOut
     include WishETL::Step::MultiInput
 
+#    def initialize(*args)
+#      super
+#    end
+
     def transform
       if @tmp
         @datum.transformed = @tmp ** @datum.input.to_i
@@ -45,30 +48,20 @@ describe WishETL::Step do
   end
 
   context "MultiChoice split/join" do
-    Given (:step1) { ChooserStep.new }
-    Given (:step2) { TwoStep.new }
-    Given (:step3) { ThreeStep.new }
-    Given (:step4) { MultiInputStep.new }
+    Given (:runner) { WishETL::Runner.instance }
+    Given! (:step1) { ChooserStep.new }
+    Given! (:step2) { TwoStep.new(:parent => step1) }
+    Given! (:step3) { ThreeStep.new(:parent => step1) }
+    Given! (:step4) { MultiInputStep.new(:parent => step1) }
 
     context "Connect everything together" do
-      When {
-        step1.attach_to [step2, step3, step4]
-        step2.attach_to step4
-        step3.attach_to step4
-      }
-
       context "2 then 3" do
         When {
-          step1.attach_from '2'
-          step1.etl
-          step1.attach_from '3'
-          step1.etl
-          step3.etl
-          step2.etl
-          step4.etl
-          step4.etl
-          step4.etl
-          step4.etl
+          data = StringIO.new
+          data.puts '2'
+          data.puts '3'
+          step1.attach_from data
+          runner.run
         }
 
         Then { step4.datum.transformed == 10648 }
@@ -76,16 +69,11 @@ describe WishETL::Step do
 
       context "3 then 2" do
         When {
-          step1.attach_from '3'
-          step1.etl
-          step1.attach_from '2'
-          step1.etl
-          step3.etl
-          step2.etl
-          step4.etl
-          step4.etl
-          step4.etl
-          step4.etl
+          data = StringIO.new
+          data.puts '3'
+          data.puts '2'
+          step1.attach_from data
+          runner.run
         }
 
         Then { step4.datum.transformed == 31381059609 }

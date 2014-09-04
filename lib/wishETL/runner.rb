@@ -1,25 +1,36 @@
+require 'singleton'
+
 module WishETL
-  module Runner
-    attr_writer :steps
+  class Runner
+    include Singleton
 
     def initialize
+      @steps = []
       @pids = []
     end
 
-    def attach_all
-      @steps.inject { |current_step, next_step|
-        current_step.attach_to next_step
-      }
+    def flush
+      @steps = []
+      @pids = []
     end
 
-    def run
+    def register(step)
+      @steps << step
+    end
+
+    def run(fork = true)
+      @steps.last.output = File.open(File::NULL, "w") if @steps.last.output.nil?
       @steps.each { |step|
-        @pids << fork do
+        if fork
+          @pids << fork do
 # :nocov:
+            step.run
+# :nocov:
+          end
+          step.forked
+        else
           step.run
-# :nocov:
         end
-        step.forked
       }
       Process.waitall
     end

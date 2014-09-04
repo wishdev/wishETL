@@ -3,46 +3,58 @@ require 'rspec/given'
 require 'rspec/its'
 
 describe WishETL::Step do
+  test_input = ('a'..'z').to_a.shuffle[0,8].join
+  result = test_input.reverse
+
   class SimpleStep
     include WishETL::Tube::String
     include WishETL::Step::Base
-  end
 
-  class SimpleStep2 < SimpleStep
+    attr_reader :test_data
+
+    def initialize(*args)
+      super
+      @test_data = {}
+    end
+
+    def transform
+      @datum.transformed = @datum.input.reverse
+    end
+
+    def load
+      super if @next_step
+      @test_data[:input] = @datum.input
+      @test_data[:transformed] = @datum.transformed
+    end
   end
 
   context "Simple step" do
-    test_input = 'Testing'
-
+    Given (:runner) { WishETL::Runner.instance }
     Given (:step) { SimpleStep.new }
-    When { step.attach_from test_input }
 
     context "Default operations" do
-      context "Extract" do
-        When { step.extract }
-        Then { step.datum.input == test_input }
-
-        context "Transform" do
-          When { step.transform }
-          Then { step.datum.transformed == step.datum.input }
-        end
-      end
-    end
-
-    context "Connect a pair together" do
-      Given (:step1) { SimpleStep.new }
-      Given (:step2) { SimpleStep2.new }
-
       When {
-        step1.attach_to step2
-        step1.attach_from 'Bob'
-        step1.etl
-        step2.extract
+        step.attach_from test_input
+        runner.register(step)
+        runner.run(false)
       }
+      Then { step.test_data[:input] == test_input }
+      Then { step.test_data[:transformed] == result }
+    end
+  end
 
-      context "Load/Extract" do
-        Then { step2.datum.input == step1.datum.transformed }
-      end
+  context "Simple connection" do
+    Given (:runner) { WishETL::Runner.instance }
+    Given (:step1) { SimpleStep.new }
+    Given (:step2) { SimpleStep.new }
+
+    context "Should pass string along" do
+      When {
+        step1.attach_from test_input
+        step1.attach_to step2
+        runner.run(false)
+      }
+      Then { step2.test_data[:input] == result }
     end
   end
 end

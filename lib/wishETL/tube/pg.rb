@@ -1,7 +1,7 @@
 require 'pg'
 
 class PGHelper
-  def initialize
+  def initialize(opts = {})
     @conn = PG::Connection.new
   end
 
@@ -23,8 +23,9 @@ module WishETL
     module PgLoader
       include Base
 
-      def initialize
+      def initialize(opts = {})
         @conn = PGHelper.new
+        super
       end
     end
   end

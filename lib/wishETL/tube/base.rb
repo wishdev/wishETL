@@ -1,8 +1,14 @@
 module WishETL
   module Tube
     module Base
+      include WishETL::Base
+
       attr_accessor :datum, :meta, :output
       attr_reader :input
+
+      def initialize(opts = {})
+        super
+      end
 
       def attach_from(input)
         @input = input
