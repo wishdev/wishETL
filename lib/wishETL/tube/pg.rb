@@ -2,19 +2,28 @@ require 'pg'
 
 class PGHelper
   def initialize(opts = {})
+    reconnect
+  end
+
+  def reconnect
     @conn = PG::Connection.new
   end
 
-  def exec(sql)
-    @conn.exec(sql)
+  def exec(sql, *parms)
+    begin
+      if parms.empty?
+        @conn.exec(sql)
+      else
+        @conn.exec_params(sql, parms)
+      end
+    rescue PG::UnableToSend
+      reconnect
+      retry
+    end
   end
 
   def exec_simple(sql, *parms)
-    if parms.empty?
-      @conn.exec(sql).clear
-    else
-      @conn.exec_params(sql, parms).clear
-    end
+    exec(sql, *parms).clear
   end
 end
 

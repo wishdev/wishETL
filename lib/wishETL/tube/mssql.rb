@@ -1,12 +1,14 @@
 require 'tiny_tds'
 
 class MSSQLHelper
+  attr_reader :res
+
   def initialize(opts = {})
-    @conn = TinyTds::Client.new(:host => ENV['MSSQL_HOST'])
+    @conn = TinyTds::Client.new(:username => ENV['MSSQLUSER'], :password => ENV['MSSQLPASS'], :host => ENV['MSSQLHOST'])
   end
 
   def exec(sql)
-    @conn.execute(sql)
+    @res = @conn.execute(sql)
   end
 
   def exec_simple(sql, *parms)
