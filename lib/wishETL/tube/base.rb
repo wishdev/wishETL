@@ -20,11 +20,11 @@ module WishETL
       end
 
       def extract
-        val = @enumerator.next_values_nil
-        if val
+	begin
+          val = @enumerator.next_values
           prep_datum val[0]
           true
-        else
+        rescue
           false
         end
       end

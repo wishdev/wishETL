@@ -1,7 +1,7 @@
 require 'require_all'
 
-require 'wishETL/base'
-require 'wishETL/tube'
-require 'wishETL/step'
-require 'wishETL/datum'
-require 'wishETL/runner'
+require_relative 'wishETL/base'
+require_relative 'wishETL/tube'
+require_relative 'wishETL/step'
+require_relative 'wishETL/datum'
+require_relative 'wishETL/runner'
