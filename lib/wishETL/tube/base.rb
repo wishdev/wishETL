@@ -19,12 +19,16 @@ module WishETL
         @next_step = next_step
       end
 
+      def cleanup
+      end
+
       def extract
-	begin
+        begin
           val = @enumerator.next_values
           prep_datum val[0]
           true
         rescue
+          cleanup
           false
         end
       end
