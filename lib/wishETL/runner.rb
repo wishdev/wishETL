@@ -24,7 +24,13 @@ module WishETL
         if fork
           @pids << fork do
 # :nocov:
-            step.run
+            begin
+              step.run
+            rescue => e
+              puts e.message
+              puts e.backtrace.join("\n")
+              exit 99
+            end
 # :nocov:
           end
           step.forked
@@ -32,7 +38,18 @@ module WishETL
           step.run
         end
       }
-      Process.waitall
+      begin
+        until @pids.empty?
+          pid, status = Process.wait2
+          @pids.delete(pid)
+          if status.exitstatus != 0
+            @pids.each { |pid|
+              Process.kill "HUP", pid
+            }
+          end
+        end
+      rescue SystemCallError
+      end
     end
   end
 end
