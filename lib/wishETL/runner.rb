@@ -48,6 +48,7 @@ module WishETL
             @pids.each { |pid|
               Process.kill "HUP", pid
             }
+            raise "I fell over"
           end
         end
       rescue SystemCallError
