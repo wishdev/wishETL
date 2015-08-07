@@ -27,8 +27,10 @@ module WishETL
             begin
               step.run
             rescue => e
-              Raven.capture_message "Exception while running ETL", tags: { error: "ETL" }
-              Raven.capture_exception e, tags: { error: "ETL" }
+              if ENV['SENTRY_DSN']
+                Raven.capture_message "Exception while running ETL", tags: { error: "ETL" }
+                Raven.capture_exception e, tags: { error: "ETL" }
+              end
               puts e.message
               puts e.backtrace.join("\n")
               exit 99
