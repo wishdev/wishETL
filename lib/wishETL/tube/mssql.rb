@@ -4,7 +4,8 @@ class MSSQLHelper
   attr_reader :res
 
   def initialize(opts = {})
-    @conn = TinyTds::Client.new(:username => ENV['MSSQLUSER'], :password => ENV['MSSQLPASS'], :host => ENV['MSSQLHOST'], :timeout => 60000)
+    ENV['MSSQLPORT'] ||= 1433
+    @conn = TinyTds::Client.new(:username => ENV['MSSQLUSER'], :password => ENV['MSSQLPASS'], :host => ENV['MSSQLHOST'], :port => ENV['MSSQLPORT'], :timeout => 60000)
   end
 
   def exec(sql)
